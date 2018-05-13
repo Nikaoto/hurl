@@ -25,6 +25,7 @@ function Player:new(world, spawn, joystick, color)
   self.x = spawn.x or 100
   self.y = spawn.y or 100
   self.color = color or {1, 0.88, 0.74, 1}
+  self.name = "Player"
 
   self.body = world:newCircleCollider(self.x, self.y, self.radius)
   self.body:setCollisionClass(ENTITY_COLLISION_CLASS)
@@ -84,6 +85,7 @@ function Player:grab()
     if self.hand:enter(class) then
       local collision_data = self.hand:getEnterCollisionData(class)
       self.grab_joint = world:addJoint("WeldJoint", self.hand, collision_data.collider, x, y, false)
+      self.grab_joint:setUserData(self.name)
       self.is_grabbing = true
     end
   end)
@@ -108,9 +110,15 @@ function Player:update(dt)
 end
 
 function Player:draw()
-  love.graphics.setColor(self.color)
   self.controller:draw()
 
+  -- Draw player
+  love.graphics.setColor(self.color)
+  love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.radius)
+  love.graphics.setColor(0, 0, 0, 1)
+  love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius+1)
+
+  love.graphics.setColor(1, 1, 1, 1)
   -- Draw arm
   love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
     self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)

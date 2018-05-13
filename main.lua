@@ -12,7 +12,7 @@ require "obj/Player"
 require "obj/Controller"
 require "obj/Neon"
 
-FULL_SCREEN = true
+FULL_SCREEN = false
 LEVEL_COLLISION_CLASS = "Level"
 ARM_COLLISION_CLASS = "Arm"
 HAND_COLLISION_CLASS = "Hand"
@@ -79,6 +79,7 @@ function love.update(dt)
 end
 
 function love.draw()
+  love.graphics.clear(0.5, 0.5, 0.5, 1)
   world:draw()
   player1:draw()
 
