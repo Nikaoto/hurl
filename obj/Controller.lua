@@ -9,11 +9,12 @@ Controller.grab_button = 6
 Controller.axis_deadzone = 0.1
 --Controller.swing_deadzone = 0.5
 
-function Controller:new(control_body, swing_body, joystick, grab_callback, release_callback)
+function Controller:new(control_body, swing_body, joystick, swing_callback, grab_callback, release_callback)
   self.control_body = control_body
   self.control_body_mass = control_body:getMass()
   self.swing_body = swing_body
   self.joystick = joystick
+  self.swing_callback = swing_callback
   self.grab_callback = grab_callback
   self.release_callback = release_callback
 
@@ -34,6 +35,7 @@ function Controller:update(dt)
 
   if self.is_swinging then
     self:swing(self.aim.x, self.aim.y)
+    self.swing_callback()
   end
 end
 

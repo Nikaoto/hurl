@@ -21,11 +21,12 @@ Player.hand_mass = 1
 Player.hand_angular_damping = 40
 
 
-function Player:new(world, spawn, joystick, color)
+function Player:new(name, world, spawn, joystick, color)
   self.x = spawn.x or 100
   self.y = spawn.y or 100
   self.color = color or {1, 0.88, 0.74, 1}
-  self.name = "Player"
+  self.name = name
+  print(name)
 
   self.body = world:newCircleCollider(self.x, self.y, self.radius)
   self.body:setCollisionClass(ENTITY_COLLISION_CLASS)
@@ -59,11 +60,15 @@ function Player:new(world, spawn, joystick, color)
   -- Joint between grabbed object and hand
   self.grab_joint = nil
 
+  self.is_swinging = false
   self.is_grabbing = false
   self.is_trying_to_grab = false
 
   -- Controller callbacks
   self.controller = Controller(self.body, self.arm, joystick,
+    function() -- onSwing
+      self.is_swinging = true
+    end,
     function() -- onGrab
       self.is_trying_to_grab = true
       if not self.is_grabbing then
@@ -76,19 +81,32 @@ function Player:new(world, spawn, joystick, color)
         self:release()
       end
     end)
+
+  self.body:setObject(self)
+  self.hand:setObject(self)
 end
 
 function Player:grab()
   local x, y = self.hand:getX(), self.hand:getY()
 
-  lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS }, function(class)
-    if self.hand:enter(class) then
-      local collision_data = self.hand:getEnterCollisionData(class)
-      self.grab_joint = world:addJoint("WeldJoint", self.hand, collision_data.collider, x, y, false)
-      self.grab_joint:setUserData(self.name)
-      self.is_grabbing = true
-    end
-  end)
+  lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, SPIDER_COLLISION_CLASS }, 
+    function(class)
+      if self.hand:enter(class) then
+        local coll = self.hand:getEnterCollisionData(class).collider
+        self.grab_joint = world:addJoint("WeldJoint", self.hand, coll, x, y, false)
+        self.grab_joint:setUserData(self.name)
+        self.is_grabbing = true
+
+        if class == SPIDER_COLLISION_CLASS then
+          coll:getObject().stunned = true
+        end
+
+        if coll.getObject and coll:getObject().holder_name then
+          print("SETTING HOLDER NAME")
+          coll:getObject().holder_name = self.name
+        end
+      end
+    end)
 end
 
 function Player:release()
@@ -103,10 +121,10 @@ function Player:release()
 end
 
 function Player:update(dt)
+  self.is_swinging = false
   self.controller:update(dt)
-  -- move
-  -- rotate
-  -- update physics
+  self.hand.body:setActive(self.is_swinging or self.is_trying_to_grab)
+  self.arm.body:setActive(self.is_swinging or self.is_trying_to_grab)
 end
 
 function Player:draw()
@@ -119,18 +137,20 @@ function Player:draw()
   love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius+1)
 
   love.graphics.setColor(1, 1, 1, 1)
-  -- Draw arm
-  love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
-    self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
+  if self.is_swinging then
+    -- Draw arm
+    love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
+      self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
 
-  -- Draw hand
-  if self.is_grabbing or self.is_trying_to_grab then
-    love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
-      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
-      self.hand_height / self.hand_sy)
-  else
-    love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(),
-      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
-      self.hand_height / self.hand_sy)
+    -- Draw hand
+    if self.is_grabbing or self.is_trying_to_grab then
+      love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
+        self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+        self.hand_height / self.hand_sy)
+    else
+      love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(),
+        self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+        self.hand_height / self.hand_sy)
+    end
   end
 end

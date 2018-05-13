@@ -39,17 +39,26 @@ function Neon:new(world, x, y, neon_type)
   self.body:setMass(self.mass)
   self.body:setLinearDamping(self.linear_damping)
   self.body:setRestitution(self.restitution)
+
+  self.holder_name = "_"
+
+  self.body:setObject(self)
 end
 
 function Neon:update(dt)
   if not self.shattered then
     -- Check collisions
-    lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, LEVEL_COLLISION_CLASS },
+    lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, LEVEL_COLLISION_CLASS, SPIDER_COLLISION_CLASS },
       function(class)
         if self.body:enter(class) then
-          print("HIT")
+          local coll = self.body:getEnterCollisionData(class).collider
           if self.body:getLinearVelocity() >= self.shatter_speed then
-            self:shatter()
+            if coll.getObject and coll:getObject().name
+              and self.holder_name == coll:getObject().name then
+              print("SELF HIT")
+            else
+              self:shatter()
+            end
           end
         end
       end)
@@ -93,6 +102,7 @@ function Neon:shatter()
 end
 
 function Neon:destroy()
+  self.holder_name = "_"
   self.destroyed = true
   self.body:destroy()
   print("DESTROY")

@@ -11,6 +11,7 @@ wf = require "lib/windfield"
 require "obj/Player"
 require "obj/Controller"
 require "obj/Neon"
+require "obj/Spider"
 
 FULL_SCREEN = false
 LEVEL_COLLISION_CLASS = "Level"
@@ -18,9 +19,11 @@ ARM_COLLISION_CLASS = "Arm"
 HAND_COLLISION_CLASS = "Hand"
 NEON_COLLISION_CLASS = "Neon"
 ENTITY_COLLISION_CLASS = "Entity"
+SPIDER_COLLISION_CLASS = "Spider"
 
 -- contains everything except Level and Players
 objects = {}
+players = {}
 
 function love.load()
   love.window.setFullscreen(FULL_SCREEN)
@@ -31,14 +34,15 @@ function love.load()
   world:addCollisionClass(NEON_COLLISION_CLASS)
   world:addCollisionClass(ARM_COLLISION_CLASS)
   world:addCollisionClass(ENTITY_COLLISION_CLASS)
+  world:addCollisionClass(SPIDER_COLLISION_CLASS)
   world:addCollisionClass(HAND_COLLISION_CLASS, {
     ignores = { LEVEL_COLLISION_CLASS, ENTITY_COLLISION_CLASS, NEON_COLLISION_CLASS } })
 
   local w, h = love.graphics.getDimensions()
 
-  player1 = Player(world, { x = getRandX(), y = getRandY() }, love.joystick.getJoysticks()[1])
-  if love.joystick.getJoysticks()[2] then
-    player2 = Player(world, { x = getRandX(), y = getRandY() }, love.joystick.getJoysticks()[2])
+  -- Spawn players
+  for i, j in pairs(love.joystick.getJoysticks()) do
+    table.insert(players, Player("Player "..i, world, { x = getRandX(), y = getRandY() }, j))
   end
 
   -- Level
@@ -56,18 +60,24 @@ function love.load()
   wall_left:setCollisionClass(LEVEL_COLLISION_CLASS)
 
   --- Neons
-  local neon_count = 5
+  local neon_count = 10
   for i=1, neon_count do
     table.insert(objects, Neon(world, getRandX(), getRandY(), lume.randomchoice({"blue", "red"})))
+  end
+
+  --- Spiders
+  local spider_count = 5
+  for i=1, spider_count do
+    table.insert(objects, Spider(world, getRandX(), getRandY()))
   end
 end
 
 function love.update(dt)
   world:update(dt)
-  player1:update(dt)
 
-  if player2 then
-    player2:update(dt)
+  -- Update players
+  for i, p in pairs(players) do
+    p:update(dt)
   end
 
   -- Update objects
@@ -81,12 +91,10 @@ end
 function love.draw()
   love.graphics.clear(0.5, 0.5, 0.5, 1)
   world:draw()
-  player1:draw()
-
-  if player2 then
-    player2:draw()
+  for i, p in pairs(players) do
+    p:draw()
   end
-
+  
   -- Draw neons
   for _, obj in pairs(objects) do
     if obj.draw then
