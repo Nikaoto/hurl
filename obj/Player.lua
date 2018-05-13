@@ -3,6 +3,7 @@ Player = Object:extend()
 -- [[ Defaults ]] --
 Player.open_hand_sprite = love.graphics.newImage("res/hand_open.png")
 Player.closed_hand_sprite = love.graphics.newImage("res/hand_closed.png")
+Player.arm_sprite = love.graphics.newImage("res/arm.png")
 Player.radius = 28
 Player.restitution = 0.8
 Player.mass = 800
@@ -41,6 +42,8 @@ function Player:new(world, spawn, joystick, color)
   self.arm:setMass(self.arm_mass)
   self.arm:setAngularDamping(self.arm_angular_damping)
   self.arm_joint = world:addJoint("RevoluteJoint", self.body, self.arm, self.x, self.y, false)
+  self.arm_sx = 1.2*self.arm_width / self.arm_sprite:getWidth()
+  self.arm_sy = 1.3*self.arm_height / self.arm_sprite:getHeight()
 
   -- Hand spawns south of arm
   local hand_x = self.x - self.hand_width / 2
@@ -108,6 +111,10 @@ function Player:draw()
   love.graphics.setColor(self.color)
   self.controller:draw()
 
+  -- Draw arm
+  love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
+    self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
+
   -- Draw hand
   if self.is_grabbing or self.is_trying_to_grab then
     love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
@@ -118,5 +125,4 @@ function Player:draw()
       self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
       self.hand_height / self.hand_sy)
   end
-
 end
