@@ -78,8 +78,8 @@ end
 function Player:release()
   self.is_grabbing = false
 
-  if self.grab_joint and self.grab_joint.destroy then
-    self.grab_joint:destroy()
+  if self.grab_joint then
+    world:removeJoint(self.grab_joint)
     self.grab_joint = nil
   else
     self.grab_joint = nil

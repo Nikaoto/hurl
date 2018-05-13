@@ -36,7 +36,6 @@ function love.load()
 
   local w, h = love.graphics.getDimensions()
 
-  --local spawn1 =
   player1 = Player(world, { x = getRandX(), y = getRandY() }, love.joystick.getJoysticks()[1])
   if love.joystick.getJoysticks()[2] then
     player2 = Player(world, { x = getRandX(), y = getRandY() }, love.joystick.getJoysticks()[2])
@@ -59,7 +58,7 @@ function love.load()
   --- Neons
   local neon_count = 5
   for i=1, neon_count do
-    table.insert(objects, Neon(world, getRandX(), getRandY()))
+    table.insert(objects, Neon(world, getRandX(), getRandY(), lume.randomchoice({"blue", "red"})))
   end
 end
 
