@@ -1,14 +1,13 @@
--- require "conf"
+require "conf"
+require "sound"
 
 inspect = require "lib/inspect"
-
+json = require "lib/json"
 Object = require "lib/classic"
 lume = require "lib/lume"
 Timer = require "lib/Timer"
 wf = require "lib/windfield"
 shack = require "lib/shack"
-
-require "sound"
 
 -- Objects
 require "obj/Blood"
@@ -24,16 +23,17 @@ HAND_COLLISION_CLASS = "Hand"
 NEON_COLLISION_CLASS = "Neon"
 ENTITY_COLLISION_CLASS = "Entity"
 SPIDER_COLLISION_CLASS = "Spider"
---BACKGROUND_COLOR = {0.5, 0.5, 0.5, 1}
 BACKGROUND_COLOR =  { 0.41, 0.35, 0.12, 1 }
 BACKGROUND_COLOR_2 =  { 0.41, 0.35, 0.12, 0.2 }
 WALL_COLOR = {0.7, 0.7, 0.7, 1}
+CONTROLS_JSON_PATH = "joystick_controls.txt"
 
 -- contains everything except Level and Players
 objects = {}
 players = {}
 blood = {}
 game_done = false
+single_player = false
 
 function love.load()
   love.window.setFullscreen(FULL_SCREEN)
@@ -56,21 +56,44 @@ function love.load()
 
   local w, h = love.graphics.getDimensions()
 
+  mappings = {}
+
   mappings = {
-    {
-      grab = 6
-    },
-    {
-      grab = 7,
-      rx = 4,
-      ry = 3
-    }
+    grab = 6,
+    lx = 1,
+    ly = 2,
+    rx = 3,
+    ry = 4
   }
+
+  if not love.filesystem.getInfo(CONTROLS_JSON_PATH) then
+    love.filesystem.write(CONTROLS_JSON_PATH, json.encode(mappings))
+  else
+    local contents = love.filesystem.read(CONTROLS_JSON_PATH)
+    if contents then
+      mappings = json.decode(contents)
+    end
+  end
+
+  --  mappings = {
+      -- {
+      --   grab = 6
+      -- },
+      -- {
+      --   grab = 7,
+      --   rx = 4,
+      --   ry = 3
+      -- }
+    --}
 
   -- Spawn players
   for i, j in pairs(love.joystick.getJoysticks()) do
     local randcolor = { lume.random(5, 100)/100,lume.random(5, 100)/100,lume.random(5, 100)/100 }
-    table.insert(players, Player("Player "..i, world, { x = getRandX(), y = getRandY() }, j, randcolor, mappings[i]))
+    table.insert(players, Player("Player "..i, world, { x = getRandX(), y = getRandY() }, j, randcolor, mappings))
+  end
+
+  if #players == 1 then
+    single_player = true
   end
 
   -- Level
@@ -88,7 +111,7 @@ function love.load()
   wall_left:setCollisionClass(LEVEL_COLLISION_CLASS)
 
   --- Neons
-  local neon_count = 5
+  local neon_count = 1 + math.ceil(w / 200)
   local m = 70
   for i=1, neon_count do
     local x = lume.random(m, w-m)
@@ -97,7 +120,7 @@ function love.load()
   end
 
   --- Spiders
-  local spider_count = 3
+  local spider_count = 3 + math.ceil(w / 300)
   for i=1, spider_count do
     table.insert(objects, Spider(world, getRandX(), getRandY()))
   end
@@ -107,7 +130,7 @@ function love.update(dt)
   shack:update(dt)
   world:update(dt)
 
-  if #players == 1 then
+  if #players == 1 and not single_player then
     game_done = true
     winner = players[1].name
   end
@@ -189,9 +212,9 @@ function love.draw()
     love.graphics.setColor(1, 1, 1, 1)
 
     -- NOTE: DO NOT CROSS 0.25 and 0.75 screen width with text
-    local scale = 8
+    local scale = 6
     love.graphics.setColor(1, 0.843, 0)
-    love.graphics.printf(winner .. " wins!", 0, h*0.3, w/scale, 'center', 0, scale, scale)
+    love.graphics.printf(winner .. " wins!", 0, h*0.4, w/scale, 'center', 0, scale, scale)
     love.graphics.setColor(1, 1, 1, 1)
   end
 end
@@ -217,6 +240,12 @@ end
 
 -- [[ Utils ]] --
 function sq(n) return n*n end
+
+function file_exists(file)
+  local f = io.open(file, "rb")
+  if f then f:close() end
+  return f ~= nil
+end
 
 function filter_collision_classes(objects, ccs)
   local ret = {}

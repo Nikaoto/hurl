@@ -201,6 +201,9 @@ function Player:drawUI()
 
   local x, y = self.body:getX(), self.body:getY()
 
+  -- Name
+  love.graphics.print(self.name, self.body:getX() - self.radius/2 - m-p, self.body:getY() - self.radius/2 - m -p)
+
   -- Hp container
   love.graphics.setColor(0, 0, 0, 1)
   love.graphics.rectangle("fill", x - w_max/2 - p, y - m - p, w_max + p*2, h + p*2)
