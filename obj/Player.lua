@@ -20,9 +20,10 @@ Player.hand_mass = 1
 Player.hand_angular_damping = 40
 
 
-function Player:new(world, spawn, joystick)
+function Player:new(world, spawn, joystick, color)
   self.x = spawn.x or 100
   self.y = spawn.y or 100
+  self.color = color or {1, 0.88, 0.74, 1}
 
   self.body = world:newCircleCollider(self.x, self.y, self.radius)
   self.body:setCollisionClass(ENTITY_COLLISION_CLASS)
@@ -48,8 +49,8 @@ function Player:new(world, spawn, joystick)
   self.hand:setCollisionClass(HAND_COLLISION_CLASS)
   self.hand:setMass(self.hand_mass)
   self.hand_joint = world:addJoint("RevoluteJoint", self.arm, self.hand, self.x, hand_y, true)
-  self.hand_sx = 1.4* self.hand_width / self.open_hand_sprite:getWidth()
-  self.hand_sy = 1.4* self.hand_height / self.open_hand_sprite:getHeight()
+  self.hand_sx = 1.6* self.hand_width / self.open_hand_sprite:getWidth()
+  self.hand_sy = 1.6* self.hand_height / self.open_hand_sprite:getHeight()
 
   -- Joint between grabbed object and hand
   self.grab_joint = nil
@@ -104,16 +105,18 @@ function Player:update(dt)
 end
 
 function Player:draw()
-  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.setColor(self.color)
   self.controller:draw()
 
+  -- Draw hand
   if self.is_grabbing or self.is_trying_to_grab then
-    -- Draw closed hand
-    love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(), 
-      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width * 6, self.hand_height*7)
+    love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
+      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+      self.hand_height / self.hand_sy)
   else
-    love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(), 
-      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width * 6, self.hand_height*7)
+    love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(),
+      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+      self.hand_height / self.hand_sy)
   end
-  -- don't do anything for now
+
 end
