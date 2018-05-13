@@ -11,9 +11,11 @@ Neon.active = false
 Neon.light_radius = 80
 Neon.shattered_light_radius = 70
 Neon.hit_collision_classes = { NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, LEVEL_COLLISION_CLASS }
-Neon.shatter_speed = 450
+Neon.shatter_speed = 750
+Neon.hit_speed = 450
 Neon.light_alpha = 0.4
 Neon.shattered_light_alpha = 0.15
+Neon.damage_mult = 0.01
 
 function Neon:new(world, x, y, neon_type)
   self.x = x
@@ -51,13 +53,26 @@ function Neon:update(dt)
     lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, LEVEL_COLLISION_CLASS, SPIDER_COLLISION_CLASS },
       function(class)
         if self.body:enter(class) then
+
           local coll = self.body:getEnterCollisionData(class).collider
-          if self.body:getLinearVelocity() >= self.shatter_speed then
-            if coll.getObject and coll:getObject().name
+          local vel = self.body:getLinearVelocity()
+
+          -- Hit if moving fast
+          if vel >= self.hit_speed then
+            -- Check for self hit
+            if coll.getObject and coll:getObject() and coll:getObject().name
               and self.holder_name == coll:getObject().name then
               print("SELF HIT")
             else
-              self:shatter()
+              -- Deal damage
+              if coll.getObject and coll:getObject() and coll:getObject().takeDamage then
+                coll:getObject():takeDamage(self.damage_mult * vel)
+              end
+
+              -- Shatter if moving fast enough
+              if vel >= self.shatter_speed then
+                self:shatter()
+              end
             end
           end
         end

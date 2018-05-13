@@ -60,7 +60,7 @@ function love.load()
   wall_left:setCollisionClass(LEVEL_COLLISION_CLASS)
 
   --- Neons
-  local neon_count = 10
+  local neon_count = 5
   for i=1, neon_count do
     table.insert(objects, Neon(world, getRandX(), getRandY(), lume.randomchoice({"blue", "red"})))
   end

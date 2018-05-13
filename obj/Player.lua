@@ -6,9 +6,11 @@ Player.closed_hand_sprite = love.graphics.newImage("res/hand_closed.png")
 Player.arm_sprite = love.graphics.newImage("res/arm.png")
 Player.radius = 28
 Player.restitution = 0.8
-Player.mass = 800
+Player.mass = 200
 Player.linear_damping = 0.9
 Player.fixed_rotation = false
+Player.max_health = 200
+Player.health = 200
 --- Arm
 Player.arm_width = 10
 Player.arm_height = 50
@@ -102,7 +104,6 @@ function Player:grab()
         end
 
         if coll.getObject and coll:getObject().holder_name then
-          print("SETTING HOLDER NAME")
           coll:getObject().holder_name = self.name
         end
       end
@@ -152,5 +153,13 @@ function Player:draw()
         self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
         self.hand_height / self.hand_sy)
     end
+  end
+end
+
+function Player:takeDamage(dmg)
+  self.health = self.health - dmg
+
+  if self.health < 0 then
+    self.health = 0
   end
 end
