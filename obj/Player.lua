@@ -6,7 +6,7 @@ Player.closed_hand_sprite = love.graphics.newImage("res/hand_closed.png")
 Player.arm_sprite = love.graphics.newImage("res/arm.png")
 Player.radius = 28
 Player.restitution = 0.8
-Player.mass = 200
+Player.mass = 30
 Player.linear_damping = 0.9
 Player.fixed_rotation = false
 Player.max_health = 200
@@ -138,7 +138,7 @@ function Player:draw()
   love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius+1)
 
   love.graphics.setColor(1, 1, 1, 1)
-  if self.is_swinging then
+  if self.is_swinging or self.is_trying_to_grab then
     -- Draw arm
     love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
       self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
@@ -154,6 +154,28 @@ function Player:draw()
         self.hand_height / self.hand_sy)
     end
   end
+
+  self:drawUI()
+end
+
+function Player:drawUI()
+  love.graphics.setColor(1, 1, 1, 1)
+
+  local m = 6
+  local p = 3
+  local w_max = 40
+  local h = 10
+
+  local x, y = self.body:getX(), self.body:getY()
+
+  -- Hp container
+  love.graphics.setColor(0, 0, 0, 1)
+  love.graphics.rectangle("fill", x - w_max/2 - p, y - m - p, w_max + p*2, h + p*2)
+
+  -- Hp bar
+  local w = w_max * self.health / self.max_health
+  love.graphics.setColor(1, 0.25, 0, 1)
+  love.graphics.rectangle("fill", x - w_max/2, y - m, w, h)
 end
 
 function Player:takeDamage(dmg)
@@ -162,4 +184,8 @@ function Player:takeDamage(dmg)
   if self.health < 0 then
     self.health = 0
   end
+end
+
+function Player:inDistance(x, y, dist)
+  return lume.distance(x, y, self.body:getX(), self.body:getY()) <= dist
 end

@@ -13,13 +13,15 @@ require "obj/Controller"
 require "obj/Neon"
 require "obj/Spider"
 
-FULL_SCREEN = false
+FULL_SCREEN = true
 LEVEL_COLLISION_CLASS = "Level"
 ARM_COLLISION_CLASS = "Arm"
 HAND_COLLISION_CLASS = "Hand"
 NEON_COLLISION_CLASS = "Neon"
 ENTITY_COLLISION_CLASS = "Entity"
 SPIDER_COLLISION_CLASS = "Spider"
+--BACKGROUND_COLOR = {0.5, 0.5, 0.5, 1}
+BACKGROUND_COLOR =  { 0.41, 0.35, 0.12 }
 
 -- contains everything except Level and Players
 objects = {}
@@ -62,7 +64,7 @@ function love.load()
   --- Neons
   local neon_count = 5
   for i=1, neon_count do
-    table.insert(objects, Neon(world, getRandX(), getRandY(), lume.randomchoice({"blue", "red"})))
+    table.insert(objects, Neon(world, getRandX(), getRandY(), lume.randomchoice({"red", "blue"})))
   end
 
   --- Spiders
@@ -84,12 +86,20 @@ function love.update(dt)
   for _, obj in pairs(objects) do
     if obj.update then
       obj:update(dt)
+
+      -- if obj.name == "Neon" and obj.neon_type == "blue" then
+      --   lume.each(players, function(p)
+      --     if obj:isLightingCircle(p.body:getX(), p.body:getY(), p.radius) then
+
+      --     end
+      --   end)
+      -- end
     end
   end
 end
 
 function love.draw()
-  love.graphics.clear(0.5, 0.5, 0.5, 1)
+  love.graphics.clear(BACKGROUND_COLOR)
   world:draw()
   for i, p in pairs(players) do
     p:draw()
@@ -143,6 +153,24 @@ function queryRect(x, y, w, h, excluded_collision_classes)
   end
 
   return colliders
+end
+
+function targetPlayer(p)
+  local all_spiders = lume.filter(objects, function(obj) return obj.name and obj.name == "Spider" end)
+
+  local available_spiders = lume.filter(all_spiders, function(spider) return spider.prey == nil end)
+  if #available_spiders > 0 then
+    for _, spider in pairs(available_spiders) do
+      spider:setPrey(p)
+    end
+  else
+    for _, spider in pairs(lume.slice(all_spiders, math.ceil(#all_spiders/2))) do
+      if lume.distance(p.body:getX(), p.body:getY(), spider.body:getX(), spider.body:getY())
+        < Spider.global_aggro_distance then
+        spider:setPrey(p)
+      end
+    end
+  end
 end
 
 --- Spawning

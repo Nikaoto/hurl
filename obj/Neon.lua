@@ -15,11 +15,12 @@ Neon.shatter_speed = 750
 Neon.hit_speed = 450
 Neon.light_alpha = 0.4
 Neon.shattered_light_alpha = 0.15
-Neon.damage_mult = 0.01
+Neon.damage_mult = 0.1
 
 function Neon:new(world, x, y, neon_type)
   self.x = x
   self.y = y
+  self.name = "Neon"
   self.neon_type = neon_type or "blue"
 
   -- Set sprite
@@ -77,6 +78,16 @@ function Neon:update(dt)
           end
         end
       end)
+
+    if self.neon_type == "blue" then
+      for i, p in pairs(players) do
+        if self:isLightingCircle(p.body:getX(), p.body:getY(), p.radius) then
+          targetPlayer(p)
+        end
+      end
+    elseif self.neon_type == "red" then
+    elseif self.neon_type == "green" then
+    end
   elseif not self.destroyed then
     -- Check if player has let go and then destroy self body
     if #self.body:getJoints() == 0 then
@@ -128,9 +139,9 @@ function Neon:getBody()
 end
 
 function Neon:isLightingPoint(x, y)
-  return lume.dist(self.x, self.y, x, y, true) < sq(self.light_radius)
+  return lume.distance(self.x, self.y, x, y, true) < sq(self.light_radius)
 end
 
 function Neon:isLightingCircle(x, y, r)
-  return lume.dist(self.x, self.y, x, y, true) < sq(self.light_radius) + sq(r)
+  return lume.distance(self.x, self.y, x, y, true) < sq(self.light_radius) + sq(r)
 end
