@@ -1,6 +1,8 @@
 Player = Object:extend()
 
 -- [[ Defaults ]] --
+Player.open_hand_sprite = love.graphics.newImage("res/hand_open.png")
+Player.closed_hand_sprite = love.graphics.newImage("res/hand_closed.png")
 Player.radius = 28
 Player.restitution = 0.8
 Player.mass = 800
@@ -46,17 +48,25 @@ function Player:new(world, spawn, joystick)
   self.hand:setCollisionClass(HAND_COLLISION_CLASS)
   self.hand:setMass(self.hand_mass)
   self.hand_joint = world:addJoint("RevoluteJoint", self.arm, self.hand, self.x, hand_y, true)
+  self.hand_sx = 1.4* self.hand_width / self.open_hand_sprite:getWidth()
+  self.hand_sy = 1.4* self.hand_height / self.open_hand_sprite:getHeight()
 
   -- Joint between grabbed object and hand
   self.grab_joint = nil
 
+  self.is_grabbing = false
+  self.is_trying_to_grab = false
+
+  -- Controller callbacks
   self.controller = Controller(self.body, self.arm, joystick,
     function() -- onGrab
+      self.is_trying_to_grab = true
       if not self.is_grabbing then
         self:grab()
       end
     end,
     function() -- onRelease
+      self.is_trying_to_grab = false
       if self.is_grabbing then
         self:release()
       end
@@ -94,6 +104,16 @@ function Player:update(dt)
 end
 
 function Player:draw()
+  love.graphics.setColor(1, 1, 1, 1)
   self.controller:draw()
+
+  if self.is_grabbing or self.is_trying_to_grab then
+    -- Draw closed hand
+    love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(), 
+      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width * 6, self.hand_height*7)
+  else
+    love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(), 
+      self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width * 6, self.hand_height*7)
+  end
   -- don't do anything for now
 end

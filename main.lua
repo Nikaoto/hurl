@@ -12,7 +12,7 @@ require "obj/Player"
 require "obj/Controller"
 require "obj/Neon"
 
-FULL_SCREEN = false
+FULL_SCREEN = true
 LEVEL_COLLISION_CLASS = "Level"
 ARM_COLLISION_CLASS = "Arm"
 HAND_COLLISION_CLASS = "Hand"
