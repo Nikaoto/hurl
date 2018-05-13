@@ -3,11 +3,12 @@ Spider = Object:extend()
 Spider.idle_sprite = love.graphics.newImage("res/spider_1.png")
 --Spider.walk_sprites = { love.graphics.newImage("res/spider_3.png"), love.graphics.newImage("res/spider_2.png") }
 Spider.stunned_sprite = love.graphics.newImage("res/spider_stunned.png")
-Spider.stand_chance = 0.2
+Spider.stand_chance = 0.3
 Spider.aggro_distance = 80
 Spider.global_aggro_distance = 700
 Spider.idle_move_speed = 200
 Spider.aggro_move_speed = 300
+Spider.run_move_speed = 500
 Spider.width = 36
 Spider.height = 28
 Spider.restitution = 0.8
@@ -32,7 +33,8 @@ function Spider:new(world, x, y)
   self.movement_timer = Timer()
   self.movement_timer:every({1, 3}, function()
     self.move_direction = lume.random(math.pi*2)
-    self.standing = math.random(0, 1) > self.stand_chance
+    self.standing = math.random(0, 100)/100 > self.stand_chance
+    sound.play("crawl")
   end)
 
   self.stun_timer = Timer()
@@ -62,7 +64,13 @@ function Spider:update(dt)
 
   -- AI
   if not self.stunned then
-    if self.prey then
+    -- local scary_thing = self:getClosestScaryThing()
+    -- if scary_thing then
+    --   local run_angle = lume.angle(self.body:getX(), self.body:getY(),
+    --     scary_thing.body:getX(), scary_thing.body:getY()) + math.pi
+    --   local vx, vy = lume.vector(run_angle, self.run_move_speed)
+    --   self.body:setLinearVelocity(vx, vy)
+    if self.prey and not self.prey.dead then
       self:chasePrey()
     else
       self.prey = self:findClosestPrey()
@@ -85,6 +93,7 @@ function Spider:update(dt)
     self.recovering = true
     self.prey = nil
     self.stun_timer:after(self.stun_time, function()
+      sound.play("hiss")
       self.stunned = false
       self.recovering = false
       self.sprite = self.idle_sprite
@@ -104,7 +113,7 @@ function Spider:draw()
   love.graphics.draw(self.sprite, self.body:getX() - self.width*d , self.body:getY() - self.height/2 - self.height*self.sx, 0,
     self.sx * d, self.sy)
 
-  love.graphics.circle("line", self.body:getX(), self.body:getY(), self.aggro_distance)
+  --love.graphics.circle("line", self.body:getX(), self.body:getY(), self.aggro_distance)
 end
 
 function Spider:getDirection()
@@ -112,6 +121,18 @@ function Spider:getDirection()
     return -1
   end
   return 1
+end
+
+function Spider:getClosestScaryThing()
+  local scary_things = lume.filter(getAllNeons("red"), function(n) 
+      return n:isLightingCircle(self.body:getX(), self.body:getY(), self.width/2)
+    end)
+  local active_scary_things = lume.filter(scary_things, function(a) return a.body ~= nil end)
+  if #active_scary_things > 0 then
+    return active_scary_things[1]
+  else
+    return nil
+  end
 end
 
 function Spider:findClosestPrey()

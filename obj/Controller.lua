@@ -9,7 +9,7 @@ Controller.grab_button = 6
 Controller.axis_deadzone = 0.1
 --Controller.swing_deadzone = 0.5
 
-function Controller:new(control_body, swing_body, joystick, swing_callback, grab_callback, release_callback)
+function Controller:new(control_body, swing_body, joystick, swing_callback, grab_callback, release_callback, mappings)
   self.control_body = control_body
   self.control_body_mass = control_body:getMass()
   self.swing_body = swing_body
@@ -27,6 +27,30 @@ function Controller:new(control_body, swing_body, joystick, swing_callback, grab
   self.prev_aim = { x = 0, y = 0 }
   self.control_swing_speed = 0
   self.body_swing_speed = 0
+
+  self.rx = 3
+  self.ry = 4
+  self.lx = 1
+  self.ly = 2
+
+  if mappings then
+    if mappings.grab then
+      self.grab_button = mappings.grab
+    end
+    if mappings.rx then
+      self.rx = mappings.rx
+    end
+    if mappings.ry then
+      self.ry = mappings.ry
+    end
+    if mappings.lx then
+      self.lx = mappings.lx
+    end
+    if mappings.ly then
+      self.ly = mappings.ly
+    end
+
+  end
 end
 
 function Controller:update(dt)
@@ -41,7 +65,7 @@ end
 
 function Controller:handleJoystick(dt)
   -- Rotation
-  local RX, RY = self.joystick:getAxis(3), self.joystick:getAxis(4)
+  local RX, RY = self.joystick:getAxis(self.rx), self.joystick:getAxis(self.ry)
 
   self.aim.actual_x = self.control_body:getX() + self.aim_distance * RX
   self.aim.actual_y = self.control_body:getY() + self.aim_distance * RY
@@ -58,7 +82,7 @@ function Controller:handleJoystick(dt)
   end
 
   -- Movement
-  local LX, LY = self.joystick:getAxis(1), self.joystick:getAxis(2)
+  local LX, LY = self.joystick:getAxis(self.lx), self.joystick:getAxis(self.ly)
   self.control_body:setLinearVelocity(LX * self.speed, LY * self.speed)
 
   -- Grabbing

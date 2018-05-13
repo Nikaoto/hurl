@@ -11,8 +11,8 @@ Neon.active = false
 Neon.light_radius = 80
 Neon.shattered_light_radius = 70
 Neon.hit_collision_classes = { NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, LEVEL_COLLISION_CLASS }
-Neon.shatter_speed = 750
-Neon.hit_speed = 450
+Neon.shatter_speed = 700
+Neon.hit_speed = 250
 Neon.light_alpha = 0.4
 Neon.shattered_light_alpha = 0.15
 Neon.damage_mult = 0.1
@@ -27,6 +27,7 @@ function Neon:new(world, x, y, neon_type)
   if self.neon_type == "blue" then
     self.light_color = { 0, 1, 1, self.light_alpha }
     self.sprite = love.graphics.newImage(self.blue_sprite_path)
+    self.light_radius = 60
   elseif self.neon_type == "red" then
     self.light_color = { 1, 0.1, 0, self.light_alpha }
     self.sprite = love.graphics.newImage(self.red_sprite_path)
@@ -65,6 +66,7 @@ function Neon:update(dt)
               and self.holder_name == coll:getObject().name then
               print("SELF HIT")
             else
+              --sound.play("electro")
               -- Deal damage
               if coll.getObject and coll:getObject() and coll:getObject().takeDamage then
                 coll:getObject():takeDamage(self.damage_mult * vel)
@@ -117,6 +119,9 @@ function Neon:activate()
 end
 
 function Neon:shatter()
+  shack:setShake(40)
+  sound.play("shatter")
+
   self.shattered = true
   self.last_x, self.last_y = self.body:getPosition()
   -- Deactivate body

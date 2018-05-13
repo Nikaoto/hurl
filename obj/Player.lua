@@ -4,13 +4,14 @@ Player = Object:extend()
 Player.open_hand_sprite = love.graphics.newImage("res/hand_open.png")
 Player.closed_hand_sprite = love.graphics.newImage("res/hand_closed.png")
 Player.arm_sprite = love.graphics.newImage("res/arm.png")
+--Player.dead_sprite = love.graphics.newImage("res/dead.png")
 Player.radius = 28
 Player.restitution = 0.8
 Player.mass = 30
 Player.linear_damping = 0.9
 Player.fixed_rotation = false
-Player.max_health = 200
-Player.health = 200
+Player.max_health = 150
+Player.health = 150
 --- Arm
 Player.arm_width = 10
 Player.arm_height = 50
@@ -18,12 +19,12 @@ Player.arm_mass = 1
 Player.arm_angular_damping = 4
 --- Hand
 Player.hand_width = 20
-Player.hand_height = 20
+Player.hand_height = 25
 Player.hand_mass = 1
 Player.hand_angular_damping = 40
 
 
-function Player:new(name, world, spawn, joystick, color)
+function Player:new(name, world, spawn, joystick, color, mappings)
   self.x = spawn.x or 100
   self.y = spawn.y or 100
   self.color = color or {1, 0.88, 0.74, 1}
@@ -57,7 +58,7 @@ function Player:new(name, world, spawn, joystick, color)
   self.hand:setMass(self.hand_mass)
   self.hand_joint = world:addJoint("RevoluteJoint", self.arm, self.hand, self.x, hand_y, true)
   self.hand_sx = 1.6* self.hand_width / self.open_hand_sprite:getWidth()
-  self.hand_sy = 1.6* self.hand_height / self.open_hand_sprite:getHeight()
+  self.hand_sy = 1.4* self.hand_height / self.open_hand_sprite:getHeight()
 
   -- Joint between grabbed object and hand
   self.grab_joint = nil
@@ -82,7 +83,8 @@ function Player:new(name, world, spawn, joystick, color)
       if self.is_grabbing then
         self:release()
       end
-    end)
+    end,
+    mappings)
 
   self.body:setObject(self)
   self.hand:setObject(self)
@@ -98,6 +100,7 @@ function Player:grab()
         self.grab_joint = world:addJoint("WeldJoint", self.hand, coll, x, y, false)
         self.grab_joint:setUserData(self.name)
         self.is_grabbing = true
+        sound.play("grab")
 
         if class == SPIDER_COLLISION_CLASS then
           coll:getObject().stunned = true
@@ -116,46 +119,76 @@ function Player:release()
   if self.grab_joint then
     world:removeJoint(self.grab_joint)
     self.grab_joint = nil
+    sound.play("throw")
   else
     self.grab_joint = nil
   end
 end
 
 function Player:update(dt)
-  self.is_swinging = false
-  self.controller:update(dt)
-  self.hand.body:setActive(self.is_swinging or self.is_trying_to_grab)
-  self.arm.body:setActive(self.is_swinging or self.is_trying_to_grab)
+  if not self.dead then
+    self.is_swinging = false
+    self.controller:update(dt)
+    self.hand.body:setActive(self.is_swinging or self.is_trying_to_grab)
+    self.arm.body:setActive(self.is_swinging or self.is_trying_to_grab)
+
+    -- if self.is_trying_to_grab and not self.is_grabbing then
+    --   -- Stay collision grab
+    --   lume.each({ NEON_COLLISION_CLASS, ENTITY_COLLISION_CLASS, SPIDER_COLLISION_CLASS }, function(class)
+    --     if self.hand:stay(class) and not self.grab_joint then
+    --       local colls = lume.map(self.hand:getStayCollisionData(class), function(x) return x.collider end)
+    --       if #colls > 0 then
+    --         local coll = colls[1]
+    --         self.grab_joint = world:addJoint("WeldJoint", self.hand, coll, self.hand:getX(), self.hand:getY(), false)
+    --         self.grab_joint:setUserData(self.name)
+    --         self.is_grabbing = true
+
+    --         if class == SPIDER_COLLISION_CLASS then
+    --           coll:getObject().stunned = true
+    --         end
+
+    --         if coll.getObject and coll:getObject().holder_name then
+    --           coll:getObject().holder_name = self.name
+    --         end
+    --       end
+    --     end
+    --   end)
+    -- end
+  end
 end
 
 function Player:draw()
-  self.controller:draw()
+  if not self.dead then
+    self.controller:draw()
 
-  -- Draw player
-  love.graphics.setColor(self.color)
-  love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.radius)
-  love.graphics.setColor(0, 0, 0, 1)
-  love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius+1)
+    -- Draw player
+    love.graphics.setColor(self.color)
+    love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.radius)
+    love.graphics.setColor(0, 0, 0, 1)
+    love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius+1)
 
-  love.graphics.setColor(1, 1, 1, 1)
-  if self.is_swinging or self.is_trying_to_grab then
-    -- Draw arm
-    love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
-      self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
+    love.graphics.setColor(self.color)
+    if self.is_swinging or self.is_trying_to_grab then
+      -- Draw arm
+      love.graphics.draw(self.arm_sprite, self.arm:getX(), self.arm:getY(), self.arm:getAngle() - math.pi,
+        self.arm_sx, self.arm_sy, self.arm_width*2, self.arm_height)
 
-    -- Draw hand
-    if self.is_grabbing or self.is_trying_to_grab then
-      love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
-        self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
-        self.hand_height / self.hand_sy)
-    else
-      love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(),
-        self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
-        self.hand_height / self.hand_sy)
+      -- Draw hand
+      if self.is_grabbing or self.is_trying_to_grab then
+        love.graphics.draw(self.closed_hand_sprite, self.hand:getX(), self.hand:getY(),
+          self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+          self.hand_height / self.hand_sy)
+      else
+        love.graphics.draw(self.open_hand_sprite, self.hand:getX(), self.hand:getY(),
+          self.hand:getAngle() - math.pi, self.hand_sx, self.hand_sy, self.hand_width*2.2,
+          self.hand_height / self.hand_sy)
+      end
     end
-  end
 
-  self:drawUI()
+    self:drawUI()
+  else
+    self:drawDeath()
+  end
 end
 
 function Player:drawUI()
@@ -183,7 +216,28 @@ function Player:takeDamage(dmg)
 
   if self.health < 0 then
     self.health = 0
+    self.dead = true
+
+    local rem = 0
+    for i, p in pairs(players) do
+      if p.name == self.name then
+        rem = i
+      end
+    end
+
+    table.remove(players, rem)
   end
+
+  if dmg < 3 then
+    shack:setShake(3)
+    table.insert(blood, Blood(self.body:getX(), self.body:getY(), true, 10))
+  else
+    table.insert(blood, Blood(self.body:getX(), self.body:getY(), true, dmg*100))
+    shack:setShake(dmg)
+  end
+end
+
+function Player:drawDeath()
 end
 
 function Player:inDistance(x, y, dist)
